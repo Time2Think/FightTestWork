@@ -1,8 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
+using Scripts.Player;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IDamageble
 {
     public float Hp;
     public float Damage;
@@ -12,21 +11,9 @@ public class Player : MonoBehaviour
     private float lastAttackTime = 0;
     private bool isDead = false;
     public Animator AnimatorController;
-
-    private void Update()
+    
+    private void Attack()
     {
-        if (isDead)
-        {
-            return;
-        }
-
-        if (Hp <= 0)
-        {
-            Die();
-            return;
-        }
-
-
         var enemies = SceneManager.Instance.Enemies;
         Enemie closestEnemie = null;
 
@@ -53,7 +40,6 @@ public class Player : MonoBehaviour
             }
 
         }
-
         if (closestEnemie != null)
         {
             var distance = Vector3.Distance(transform.position, closestEnemie.transform.position);
@@ -66,19 +52,28 @@ public class Player : MonoBehaviour
 
                     lastAttackTime = Time.time;
                     closestEnemie.Hp -= Damage;
-                    AnimatorController.SetTrigger("Attack");
                 }
             }
         }
     }
 
+    public void GetDamage()
+    {
+        if (isDead)
+        {
+            return;
+        }
+
+        if (Hp <= 0)
+        {
+            Die();
+        }
+    }
+    
     private void Die()
     {
         isDead = true;
         AnimatorController.SetTrigger("Die");
-
         SceneManager.Instance.GameOver();
     }
-
-
 }
