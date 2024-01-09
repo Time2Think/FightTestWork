@@ -22,7 +22,7 @@ namespace Scripts.Player
             void Start()
             {
                 if (player == null)
-                    player = GameObject.FindObjectOfType<ThirdPersonPlayerController>().transform;
+                    player = FindObjectOfType<ThirdPersonPlayerController>().transform;
 
                 navAgent = this.GetComponent<NavMeshAgent>();
                 animator = this.GetComponent<Animator>();

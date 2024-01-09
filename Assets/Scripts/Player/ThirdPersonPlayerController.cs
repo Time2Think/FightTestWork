@@ -1,28 +1,44 @@
+using UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Zenject;
 
-public class ThirdPersonPlayerController : MonoBehaviour
+namespace Scripts.Player
+{
+    public class ThirdPersonPlayerController : MonoBehaviour
     {
-        //movement fields
         [SerializeField]
-        private Camera _playerCamera;
+        private Player _player;
         [SerializeField]
-        private float _movementForce = 1f;
+        private float _movementForce = 10f;
         [SerializeField]
-        private float _jumpForce = 5f;
+        private float _jumpForce = 10f;
         [SerializeField]
         private float _maxSpeed = 5f;
+        private float lastAttackTime = 0;
         private Vector3 _forceDirection = Vector3.zero;
+        private bool _isJumping;
         
         private Animator _animator;
         private Rigidbody _rb;
-        //input fields
-        private PlayerInputAction _playerActions;
+        
+        private Camera _playerCamera;
         private InputAction _move;
-
+        private PlayerInputAction _playerActions;
+        private Cooldown _cooldown;
+        private Ability _ability;
+        
+        [Inject]
+        private void Construct (PlayerInputAction playerActions,Ability ability, Cooldown cooldown)
+        {
+            _playerActions = playerActions;
+            _ability = ability;
+            _cooldown = cooldown;
+        }
+        
         private void Awake()
         {
-            _playerActions = new PlayerInputAction();
+            _playerCamera = Camera.main;
             _rb = GetComponent<Rigidbody>();
             _animator = GetComponent<Animator>();
         }
@@ -41,6 +57,11 @@ public class ThirdPersonPlayerController : MonoBehaviour
             _playerActions.Player.Jump.started -= DoJump;
             _playerActions.Player.Attack.started -= DoAttack;
             _playerActions.Player.DoubleAttack.started -= DoDoubleAttack;
+            _playerActions.Player.Disable();
+        }
+        
+        public void DeactiveInputControll()
+        {
             _playerActions.Player.Disable();
         }
 
@@ -93,32 +114,84 @@ public class ThirdPersonPlayerController : MonoBehaviour
             right.y = 0;
             return right.normalized;
         }
-
-        private void DoJump(InputAction.CallbackContext obj)
-        {
-            if(IsGrounded())
-            {
-                _forceDirection += Vector3.up * _jumpForce;
-            }
-        }
-
-        private bool IsGrounded()
-        {
-            Ray ray = new Ray(transform.position + Vector3.up * 0.25f, Vector3.down);
-            Debug.Log("RayHit = "+ Physics.Raycast(ray, out RaycastHit hi2t, 0.3f));
-            if (Physics.Raycast(ray, out RaycastHit hit, 0.3f))
-            {return true;}
-            else
-            { return false;} 
-        }
-
+        
         private void DoAttack(InputAction.CallbackContext obj)
         {
+            if (_cooldown.IsCoolDownAttack) return;
+            _ability.StartAttackCooldown();
             _animator.SetTrigger("attack");
         }
+        
         private void DoDoubleAttack(InputAction.CallbackContext obj)
         {
-            _animator.SetTrigger("duobleAttack");
+            if (_cooldown.IsCoolDownDoubleAttack) return;
+            _ability.StartDoubleAttackCooldown();
+            _animator.SetTrigger("doubleAttack");
+        }
+        
+        private void Attack()
+        {
+            var enemies = SceneManager.Instance.Enemies;
+            Enemie closestEnemie = null;
+
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                var enemie = enemies[i];
+                if (enemie == null)
+                {
+                    continue;
+                }
+
+                if (closestEnemie == null)
+                {
+                    closestEnemie = enemie;
+                    continue;
+                }
+
+                var distance = Vector3.Distance(transform.position, enemie.transform.position);
+                var closestDistance = Vector3.Distance(transform.position, closestEnemie.transform.position);
+
+                if (distance < closestDistance)
+                {
+                    closestEnemie = enemie;
+                }
+
+            }
+            if (closestEnemie != null)
+            {
+                var distance = Vector3.Distance(transform.position, closestEnemie.transform.position);
+                if (distance <= _player.Weapon.AttackRange)
+                {
+                    if (Time.time - lastAttackTime > _player.Weapon.AtackSpeed)
+                    {
+                        //transform.LookAt(closestEnemie.transform);
+                        transform.transform.rotation = Quaternion.LookRotation(closestEnemie.transform.position - transform.position);
+                        lastAttackTime = Time.time;
+                        closestEnemie.Health.TakeDamage(_player.Weapon.Damage);
+                    }
+                }
+            }
+        }
+        
+        private void DoJump(InputAction.CallbackContext obj)
+        {
+            if (IsGrounded() && !_isJumping)
+            {
+                _isJumping = true;
+                _animator.SetTrigger("jump");
+                _forceDirection += Vector3.up * _jumpForce;
+                _isJumping = false;
+            }
+        }
+        
+        private bool IsGrounded()
+        {
+            int groundLayerMask = LayerMask.GetMask("Ground");
+            Vector3 rayOrigin = transform.TransformPoint(Vector3.up * 0.25f);
+            Ray ray = new Ray(rayOrigin, Vector3.down);
+            bool hitGround = Physics.Raycast(ray, out RaycastHit hit, 0.3f, groundLayerMask);
+            return hitGround;
         }
     }
+}
 

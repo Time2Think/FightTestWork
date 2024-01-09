@@ -1,13 +1,13 @@
 using UnityEngine;
 using UnityEngine.AI;
+using Weapons;
 
 public class Enemie : MonoBehaviour
 {
-    public float Hp;
-    public float Damage;
-    public float AtackSpeed;
-    public float AttackRange = 2;
-
+    [SerializeField]
+    private Weapon _weapon;
+    [SerializeField]
+    private Health _health;
 
     public Animator AnimatorController;
     public NavMeshAgent Agent;
@@ -15,12 +15,18 @@ public class Enemie : MonoBehaviour
     private float lastAttackTime = 0;
     private bool isDead = false;
 
+    public Health Health
+    {
+        get => _health;
+        set => _health = value;
+    }
+
 
     private void Start()
     {
         SceneManager.Instance.AddEnemie(this);
+        Health.InitHp();
         Agent.SetDestination(SceneManager.Instance.Player.transform.position);
-
     }
 
     private void Update()
@@ -30,7 +36,7 @@ public class Enemie : MonoBehaviour
             return;
         }
 
-        if (Hp <= 0)
+        if (_health.CurrentHealth <= 0)
         {
             Die();
             Agent.isStopped = true;
@@ -39,13 +45,13 @@ public class Enemie : MonoBehaviour
 
         var distance = Vector3.Distance(transform.position, SceneManager.Instance.Player.transform.position);
      
-        if (distance <= AttackRange)
+        if (distance <= _weapon.AttackRange)
         {
             Agent.isStopped = true;
-            if (Time.time - lastAttackTime > AtackSpeed)
+            if (Time.time - lastAttackTime > _weapon.AtackSpeed)
             {
                 lastAttackTime = Time.time;
-                SceneManager.Instance.Player.Hp -= Damage;
+                SceneManager.Instance.Player.Health.TakeDamage(_weapon.Damage);
                 AnimatorController.SetTrigger("Attack");
             }
         }
@@ -53,12 +59,8 @@ public class Enemie : MonoBehaviour
         {
             Agent.SetDestination(SceneManager.Instance.Player.transform.position);
         }
-        AnimatorController.SetFloat("Speed", Agent.speed); 
-        Debug.Log(Agent.speed);
-
+        AnimatorController.SetFloat("Speed", Agent.speed);
     }
-
-
 
     private void Die()
     {
@@ -66,5 +68,5 @@ public class Enemie : MonoBehaviour
         isDead = true;
         AnimatorController.SetTrigger("Die");
     }
-
+    
 }

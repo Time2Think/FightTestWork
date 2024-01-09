@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using Scripts.Player;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class SceneManager : MonoBehaviour
 {
@@ -11,7 +11,7 @@ public class SceneManager : MonoBehaviour
     public List<Enemie> Enemies;
     public GameObject Lose;
     public GameObject Win;
-
+    [SerializeField]
     private int currWave = 0;
     [SerializeField] private LevelConfig Config;
 
@@ -59,7 +59,6 @@ public class SceneManager : MonoBehaviour
             Instantiate(character, pos, Quaternion.identity);
         }
         currWave++;
-
     }
 
     public void Reset()

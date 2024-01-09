@@ -1,79 +1,51 @@
-using Scripts.Player;
 using UnityEngine;
+using Weapons;
 
-public class Player : MonoBehaviour, IDamageble
+namespace Scripts.Player
 {
-    public float Hp;
-    public float Damage;
-    public float AtackSpeed;
-    public float AttackRange = 2;
-
-    private float lastAttackTime = 0;
-    private bool isDead = false;
-    public Animator AnimatorController;
-    
-    private void Attack()
+    public class Player : MonoBehaviour
     {
-        var enemies = SceneManager.Instance.Enemies;
-        Enemie closestEnemie = null;
-
-        for (int i = 0; i < enemies.Count; i++)
+        [SerializeField]
+        public Animator _animator;
+        [SerializeField]
+        private ThirdPersonPlayerController _playerController;
+        [SerializeField]
+        private Weapon _weapon;
+        [SerializeField]
+        private Health _health;
+        public Weapon Weapon => _weapon;
+        public Health Health => _health;
+        
+        private bool _isDead;
+        
+        private void Awake()
         {
-            var enemie = enemies[i];
-            if (enemie == null)
-            {
-                continue;
-            }
-
-            if (closestEnemie == null)
-            {
-                closestEnemie = enemie;
-                continue;
-            }
-
-            var distance = Vector3.Distance(transform.position, enemie.transform.position);
-            var closestDistance = Vector3.Distance(transform.position, closestEnemie.transform.position);
-
-            if (distance < closestDistance)
-            {
-                closestEnemie = enemie;
-            }
-
-        }
-        if (closestEnemie != null)
-        {
-            var distance = Vector3.Distance(transform.position, closestEnemie.transform.position);
-            if (distance <= AttackRange)
-            {
-                if (Time.time - lastAttackTime > AtackSpeed)
-                {
-                    //transform.LookAt(closestEnemie.transform);
-                    transform.transform.rotation = Quaternion.LookRotation(closestEnemie.transform.position - transform.position);
-
-                    lastAttackTime = Time.time;
-                    closestEnemie.Hp -= Damage;
-                }
-            }
-        }
-    }
-
-    public void GetDamage()
-    {
-        if (isDead)
-        {
-            return;
+            _health.OnHealthChanged += CheckHealth;
         }
 
-        if (Hp <= 0)
+        private void Start()
         {
-            Die();
+            Health.InitHp();
         }
-    }
-    
-    private void Die()
-    {
-        isDead = true;
-        AnimatorController.SetTrigger("Die");
-        SceneManager.Instance.GameOver();
+        private void OnDestroy()
+        {
+            _health.OnHealthChanged -= CheckHealth;
+        }
+        
+        private void CheckHealth(float fillAmount)
+        {
+            if (_isDead) return;
+            if (fillAmount <= 0)
+            {
+                Die();
+            }
+        }
+        private void Die()
+        {
+            _isDead = true;
+            _playerController.DeactiveInputControll();
+            _animator.SetTrigger("die");
+            SceneManager.Instance.GameOver();
+        }
     }
 }
