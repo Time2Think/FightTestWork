@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Weapons
 {
@@ -7,5 +8,8 @@ namespace Weapons
         public float Damage;
         public float AtackSpeed;
         public float AttackRange;
+        public bool IsAttacking;
+        public abstract void EnabledWeaponCollider(bool status);
+     
     }
 }

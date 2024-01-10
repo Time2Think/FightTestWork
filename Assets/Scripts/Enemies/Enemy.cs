@@ -1,3 +1,4 @@
+using Infrastructure;
 using UnityEngine;
 using UnityEngine.AI;
 using Weapons;
@@ -5,6 +6,8 @@ using Zenject;
 
 public class Enemy : MonoBehaviour
 {
+    
+    public EnemyType TypeEnemy;
     [SerializeField]
     private Weapon _weapon;
     [SerializeField]
@@ -16,11 +19,9 @@ public class Enemy : MonoBehaviour
     private float lastAttackTime = 0;
     private bool isDead = false;
 
-    public Health Health
-    {
-        get => _health;
-        set => _health = value;
-    }
+    private float _healPlayerAfterDie;
+    public Health Health => _health;
+   
 
     private BattleController _battleController;
     private Player _player;
@@ -34,8 +35,9 @@ public class Enemy : MonoBehaviour
     
     private void Start()
     {
-        _battleController.AddEnemy(this);
+        //_battleController.AddEnemy(this);
         Health.InitHp();
+        _healPlayerAfterDie = _health.CurrentHealth / 10;
         Agent.SetDestination(_player.transform.position);
     }
 
@@ -56,16 +58,18 @@ public class Enemy : MonoBehaviour
         
         if (distance <= _weapon.AttackRange)
         {
-            Agent.isStopped = true;
+            //Agent.isStopped = true;
+            _weapon.IsAttacking = true;
             if (Time.time - lastAttackTime > _weapon.AtackSpeed)
             {
                 lastAttackTime = Time.time;
-                _player.Health.TakeDamage(_weapon.Damage);
                 AnimatorController.SetTrigger("Attack");
+               
             }
         }
         else
         {
+            _weapon.IsAttacking = false;
             AnimatorController.SetTrigger("Follow");
             Agent.isStopped = false;
             transform.LookAt(_player.transform.position);
@@ -75,6 +79,7 @@ public class Enemy : MonoBehaviour
 
     private void Die()
     {
+        _player.Health.TakeHeal(_healPlayerAfterDie);
         Agent.isStopped = true;
         _battleController.RemoveEnemy(this);
         isDead = true;

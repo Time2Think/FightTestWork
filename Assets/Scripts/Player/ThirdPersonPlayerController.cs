@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -13,12 +11,10 @@ using Zenject;
         private float _jumpForce = 5f;
         [SerializeField]
         private float _maxSpeed = 3f;
-        private float lastAttackTime = 0;
+        
         private Vector3 _forceDirection = Vector3.zero;
         private bool _isJumping;
         
-        public float detectionRange = 2f;
-        private List<Enemy> _enemies = new List<Enemy>();
         
         private Animator _animator;
         private Rigidbody _rb;
@@ -70,6 +66,7 @@ using Zenject;
             _playerActions.Player.Disable();
         }
         
+
         private void Update()
         {
             _animator.SetFloat("movementSpeed", _rb.velocity.magnitude / _maxSpeed);
@@ -133,6 +130,8 @@ using Zenject;
         private void DoAttack(InputAction.CallbackContext obj)
         {
             if (_cooldown.IsCoolDownAttack) return;
+            _player.Weapon.IsAttacking = true;
+            _player.ActiveNormalDamage();
             _ability.StartAttackCooldown();
             _animator.SetTrigger("attack");
         }
@@ -140,52 +139,12 @@ using Zenject;
         private void DoDoubleAttack(InputAction.CallbackContext obj)
         {
             if (_cooldown.IsCoolDownDoubleAttack) return;
-            _ability.StartDoubleAttackCooldown();
+            _player.Weapon.IsAttacking = true;
+            _player.ActiveDoubleDamage();
             _animator.SetTrigger("doubleAttack");
+           _ability.StartDoubleAttackCooldown();
         }
         
-        private void Attack()
-        {
-            var enemies = _battleController.Enemies;
-            Enemy closestEnemy = null;
-
-            for (int i = 0; i < enemies.Count; i++)
-            {
-                var enemie = enemies[i];
-                if (enemie == null)
-                {
-                    continue;
-                }
-
-                if (closestEnemy == null)
-                {
-                    closestEnemy = enemie;
-                    continue;
-                }
-
-                var distance = Vector3.Distance(transform.position, enemie.transform.position);
-                var closestDistance = Vector3.Distance(transform.position, closestEnemy.transform.position);
-
-                if (distance < closestDistance)
-                {
-                    closestEnemy = enemie;
-                }
-
-            }
-            if (closestEnemy != null)
-            {
-                var distance = Vector3.Distance(transform.position, closestEnemy.transform.position);
-                if (distance <= _player.Weapon.AttackRange)
-                {
-                    if (Time.time - lastAttackTime > _player.Weapon.AtackSpeed)
-                    {
-                        transform.transform.rotation = Quaternion.LookRotation(closestEnemy.transform.position - transform.position);
-                        lastAttackTime = Time.time;
-                        closestEnemy.Health.TakeDamage(_player.Weapon.Damage);
-                    }
-                }
-            }
-        }
         
         private void DoJump(InputAction.CallbackContext obj)
         {
@@ -203,32 +162,10 @@ using Zenject;
             int groundLayerMask = LayerMask.GetMask("Ground");
             Vector3 rayOrigin = transform.TransformPoint(Vector3.up * 0.25f);
             Ray ray = new Ray(rayOrigin, Vector3.down);
-            bool hitGround = Physics.Raycast(ray, out RaycastHit hit, 0.3f, groundLayerMask);
+            bool hitGround = Physics.Raycast(ray, out RaycastHit hit, 0.5f, groundLayerMask);
             return hitGround;
         }
-
-#if UNITY_EDITOR
-        private void OnDrawGizmos()
-        {
-            // Определите LayerMask для земли (или других объектов, с которыми взаимодействуете)
-            int groundLayerMask = LayerMask.GetMask("Ground");
-
-            // Получите глобальные координаты точки над объектом
-            Vector3 rayOrigin = transform.TransformPoint(Vector3.up * 0.25f);
-
-            // Создайте луч, направленный вниз от точки над объектом
-            Ray ray = new Ray(rayOrigin, Vector3.down);
-
-            // Выполните лучевое попадание с использованием LayerMask
-            bool hitGround = Physics.Raycast(ray, out RaycastHit hit, 0.5f, groundLayerMask);
-
-            // Определите цвет для луча (красный, если не попал, зеленый, если попал)
-            Color rayColor = hitGround ? Color.yellow : Color.red;
-
-            // Рисуем луч в сцене
-            Debug.DrawRay(ray.origin, ray.direction * 0.3f, rayColor);
-        }
-#endif
+        
     }
 
 

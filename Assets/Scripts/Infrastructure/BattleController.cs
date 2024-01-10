@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Infrastructure;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,6 +8,8 @@ public class BattleController : MonoBehaviour
 {
     [SerializeField]
     private LevelConfig Config;
+    [SerializeField]
+    private GameObject _littleEnemyPrefab;
     public List<Enemy> Enemies;
     [SerializeField]
     private int currWave;
@@ -28,6 +31,13 @@ public class BattleController : MonoBehaviour
 
     public void RemoveEnemy(Enemy enemy)
     {
+        if (enemy.TypeEnemy == EnemyType.Big)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                SpawnEnemy(_littleEnemyPrefab, enemy.transform.position);
+            }
+        }
         Enemies.Remove(enemy);
         if(Enemies.Count == 0)
         {
@@ -37,7 +47,7 @@ public class BattleController : MonoBehaviour
 
     private void SpawnWave()
     {
-        UpdateStatusWave();
+        Enemies.Clear();
         if (currWave >= Config.Waves.Length)
         {
             Win.SetActive(true);
@@ -48,9 +58,17 @@ public class BattleController : MonoBehaviour
         foreach (var character in wave.Enemies)
         {
             Vector3 pos = new Vector3(Random.Range(-10, 10), 0, Random.Range(-10, 10));
-            Instantiate(character, pos, Quaternion.identity);
+            SpawnEnemy(character,pos);
         }
         currWave++;
+        UpdateStatusWave();
+    }
+
+    private void SpawnEnemy(GameObject character, Vector3 position)
+    {
+       GameObject newEnemy =  Instantiate(character, position, Quaternion.identity);
+        var enemy = newEnemy.GetComponent<Enemy>();
+        AddEnemy(enemy);
     }
 
     private void UpdateStatusWave()
