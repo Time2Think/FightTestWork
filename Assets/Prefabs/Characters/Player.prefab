@@ -87,9 +87,6 @@ PrefabInstance:
       addedObject: {fileID: 5115665549051153157}
     - targetCorrespondingSourceObject: {fileID: -927199367670048503, guid: cb01db2707aa97a4e94efee03de71f52, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 4092686990306428235}
-    - targetCorrespondingSourceObject: {fileID: -927199367670048503, guid: cb01db2707aa97a4e94efee03de71f52, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1076521568005610224}
     - targetCorrespondingSourceObject: {fileID: -927199367670048503, guid: cb01db2707aa97a4e94efee03de71f52, type: 3}
       insertIndex: -1
@@ -168,18 +165,6 @@ MonoBehaviour:
   _playerController: {fileID: 799360534246660357}
   _weapon: {fileID: 3416082429987408098}
   _health: {fileID: 1076521568005610224}
---- !u!114 &4092686990306428235
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5016100408427286232}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c9c9c1b76134dc28c0e61f70a1089e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1076521568005610224
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -206,13 +191,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _player: {fileID: 5115665549051153157}
-  _playerCamera: {fileID: 0}
-  _colldown:
-    cooldownAttackTime: 0.5
-    cooldownDoubleAttackTime: 2
   _movementForce: 3
   _jumpForce: 5
   _maxSpeed: 3
+  detectionRange: 2
 --- !u!136 &7674660934930687731
 CapsuleCollider:
   m_ObjectHideFlags: 0

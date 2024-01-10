@@ -1,23 +1,24 @@
+using System;
+using System.Collections.Generic;
 using UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Zenject;
 
-namespace Scripts.Player
-{
     public class ThirdPersonPlayerController : MonoBehaviour
     {
         [SerializeField]
-        private Player _player;
+        private float _movementForce = 3f;
         [SerializeField]
-        private float _movementForce = 10f;
+        private float _jumpForce = 5f;
         [SerializeField]
-        private float _jumpForce = 10f;
-        [SerializeField]
-        private float _maxSpeed = 5f;
+        private float _maxSpeed = 3f;
         private float lastAttackTime = 0;
         private Vector3 _forceDirection = Vector3.zero;
         private bool _isJumping;
+        
+        public float detectionRange = 2f;
+        private List<Enemy> _enemies = new List<Enemy>();
         
         private Animator _animator;
         private Rigidbody _rb;
@@ -25,15 +26,24 @@ namespace Scripts.Player
         private Camera _playerCamera;
         private InputAction _move;
         private PlayerInputAction _playerActions;
+        private BattleController _battleController;
         private Cooldown _cooldown;
         private Ability _ability;
+        private Player _player;
         
         [Inject]
-        private void Construct (PlayerInputAction playerActions,Ability ability, Cooldown cooldown)
+        private void Construct (
+            PlayerInputAction playerActions,
+            BattleController battleController,
+            Ability ability,
+            Cooldown cooldown,
+            Player player)
         {
             _playerActions = playerActions;
+            _battleController = battleController;
             _ability = ability;
             _cooldown = cooldown;
+            _player = player;
         }
         
         private void Awake()
@@ -58,6 +68,11 @@ namespace Scripts.Player
             _playerActions.Player.Attack.started -= DoAttack;
             _playerActions.Player.DoubleAttack.started -= DoDoubleAttack;
             _playerActions.Player.Disable();
+        }
+        
+        private void Update()
+        {
+            _animator.SetFloat("movementSpeed", _rb.velocity.magnitude / _maxSpeed);
         }
         
         public void DeactiveInputControll()
@@ -131,8 +146,8 @@ namespace Scripts.Player
         
         private void Attack()
         {
-            var enemies = SceneManager.Instance.Enemies;
-            Enemie closestEnemie = null;
+            var enemies = _battleController.Enemies;
+            Enemy closestEnemy = null;
 
             for (int i = 0; i < enemies.Count; i++)
             {
@@ -142,32 +157,31 @@ namespace Scripts.Player
                     continue;
                 }
 
-                if (closestEnemie == null)
+                if (closestEnemy == null)
                 {
-                    closestEnemie = enemie;
+                    closestEnemy = enemie;
                     continue;
                 }
 
                 var distance = Vector3.Distance(transform.position, enemie.transform.position);
-                var closestDistance = Vector3.Distance(transform.position, closestEnemie.transform.position);
+                var closestDistance = Vector3.Distance(transform.position, closestEnemy.transform.position);
 
                 if (distance < closestDistance)
                 {
-                    closestEnemie = enemie;
+                    closestEnemy = enemie;
                 }
 
             }
-            if (closestEnemie != null)
+            if (closestEnemy != null)
             {
-                var distance = Vector3.Distance(transform.position, closestEnemie.transform.position);
+                var distance = Vector3.Distance(transform.position, closestEnemy.transform.position);
                 if (distance <= _player.Weapon.AttackRange)
                 {
                     if (Time.time - lastAttackTime > _player.Weapon.AtackSpeed)
                     {
-                        //transform.LookAt(closestEnemie.transform);
-                        transform.transform.rotation = Quaternion.LookRotation(closestEnemie.transform.position - transform.position);
+                        transform.transform.rotation = Quaternion.LookRotation(closestEnemy.transform.position - transform.position);
                         lastAttackTime = Time.time;
-                        closestEnemie.Health.TakeDamage(_player.Weapon.Damage);
+                        closestEnemy.Health.TakeDamage(_player.Weapon.Damage);
                     }
                 }
             }
@@ -192,6 +206,29 @@ namespace Scripts.Player
             bool hitGround = Physics.Raycast(ray, out RaycastHit hit, 0.3f, groundLayerMask);
             return hitGround;
         }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmos()
+        {
+            // Определите LayerMask для земли (или других объектов, с которыми взаимодействуете)
+            int groundLayerMask = LayerMask.GetMask("Ground");
+
+            // Получите глобальные координаты точки над объектом
+            Vector3 rayOrigin = transform.TransformPoint(Vector3.up * 0.25f);
+
+            // Создайте луч, направленный вниз от точки над объектом
+            Ray ray = new Ray(rayOrigin, Vector3.down);
+
+            // Выполните лучевое попадание с использованием LayerMask
+            bool hitGround = Physics.Raycast(ray, out RaycastHit hit, 0.5f, groundLayerMask);
+
+            // Определите цвет для луча (красный, если не попал, зеленый, если попал)
+            Color rayColor = hitGround ? Color.yellow : Color.red;
+
+            // Рисуем луч в сцене
+            Debug.DrawRay(ray.origin, ray.direction * 0.3f, rayColor);
+        }
+#endif
     }
-}
+
 

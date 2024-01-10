@@ -1,5 +1,5 @@
 
-    public  class Cooldown 
+    public class Cooldown 
     {
         private float _cooldownAttackTime = 0.5f;
         private float _cooldownDoubleAttackTime = 2f;

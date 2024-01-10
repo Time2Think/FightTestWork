@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.AI;
 using Weapons;
+using Zenject;
 
-public class Enemie : MonoBehaviour
+public class Enemy : MonoBehaviour
 {
     [SerializeField]
     private Weapon _weapon;
@@ -21,12 +22,21 @@ public class Enemie : MonoBehaviour
         set => _health = value;
     }
 
+    private BattleController _battleController;
+    private Player _player;
 
+    [Inject]
+    private void Construct (BattleController battleController, Player player)
+    {
+        _battleController = battleController;
+        _player = player;
+    }
+    
     private void Start()
     {
-        SceneManager.Instance.AddEnemie(this);
+        _battleController.AddEnemy(this);
         Health.InitHp();
-        Agent.SetDestination(SceneManager.Instance.Player.transform.position);
+        Agent.SetDestination(_player.transform.position);
     }
 
     private void Update()
@@ -39,32 +49,34 @@ public class Enemie : MonoBehaviour
         if (_health.CurrentHealth <= 0)
         {
             Die();
-            Agent.isStopped = true;
             return;
         }
 
-        var distance = Vector3.Distance(transform.position, SceneManager.Instance.Player.transform.position);
-     
+        var distance = Vector3.Distance(transform.position, _player.transform.position);
+        
         if (distance <= _weapon.AttackRange)
         {
             Agent.isStopped = true;
             if (Time.time - lastAttackTime > _weapon.AtackSpeed)
             {
                 lastAttackTime = Time.time;
-                SceneManager.Instance.Player.Health.TakeDamage(_weapon.Damage);
+                _player.Health.TakeDamage(_weapon.Damage);
                 AnimatorController.SetTrigger("Attack");
             }
         }
         else
         {
-            Agent.SetDestination(SceneManager.Instance.Player.transform.position);
+            AnimatorController.SetTrigger("Follow");
+            Agent.isStopped = false;
+            transform.LookAt(_player.transform.position);
+            Agent.SetDestination(_player.transform.position);
         }
-        AnimatorController.SetFloat("Speed", Agent.speed);
     }
 
     private void Die()
     {
-        SceneManager.Instance.RemoveEnemie(this);
+        Agent.isStopped = true;
+        _battleController.RemoveEnemy(this);
         isDead = true;
         AnimatorController.SetTrigger("Die");
     }
